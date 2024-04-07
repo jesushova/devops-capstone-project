@@ -123,4 +123,116 @@ class TestAccountService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    # ADD YOUR TEST CASES HERE ...
+    def test_list_accounts(self):
+        """It should return a list of accounts"""
+        # Create dummy accounts
+        accounts = self._create_accounts(3)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Check if response contains the list of created accounts
+        returned_accounts = response.get_json()
+        self.assertEqual(len(returned_accounts), 3)
+        for returned_account, expected_account in zip(returned_accounts, accounts):
+            self.assertEqual(returned_account["id"], expected_account.id)
+            self.assertEqual(returned_account["name"], expected_account.name)
+            self.assertEqual(returned_account["email"], expected_account.email)
+            self.assertEqual(returned_account["address"], expected_account.address)
+            self.assertEqual(returned_account["phone_number"], expected_account.phone_number)
+            self.assertEqual(returned_account["date_joined"], str(expected_account.date_joined))
+
+    def test_read_account(self):
+        """It should read an existing account"""
+        # Create a dummy account
+        account = AccountFactory()
+        response_create = self.client.post(BASE_URL, json=account.serialize())
+        self.assertEqual(response_create.status_code, status.HTTP_201_CREATED)
+        new_account = response_create.get_json()
+
+        # Read the created account
+        response_read = self.client.get(f"{BASE_URL}/{new_account['id']}")
+        self.assertEqual(response_read.status_code, status.HTTP_200_OK)
+        returned_account = response_read.get_json()
+
+        # Check if returned account matches the created one
+        self.assertEqual(returned_account["id"], new_account["id"])
+        self.assertEqual(returned_account["name"], account.name)
+        self.assertEqual(returned_account["email"], account.email)
+        self.assertEqual(returned_account["address"], account.address)
+        self.assertEqual(returned_account["phone_number"], account.phone_number)
+        self.assertEqual(returned_account["date_joined"], str(account.date_joined))
+
+    def test_update_account(self):
+        """It should update an existing account"""
+        # Create a dummy account
+        account = AccountFactory()
+        response_create = self.client.post(BASE_URL, json=account.serialize())
+        self.assertEqual(response_create.status_code, status.HTTP_201_CREATED)
+        new_account = response_create.get_json()
+
+        # Update the created account
+        updated_account_data = {
+            "name": "Updated Name",
+            "email": "updated_email@example.com",
+            "address": "Updated Address",
+            "phone_number": "1234567890"
+        }
+        response_update = self.client.put(
+            f"{BASE_URL}/{new_account['id']}",
+            json=updated_account_data,
+            content_type="application/json"
+        )
+        self.assertEqual(response_update.status_code, status.HTTP_200_OK)
+        updated_account = response_update.get_json()
+
+        # Check if account was updated correctly
+        self.assertEqual(updated_account["id"], new_account["id"])
+        self.assertEqual(updated_account["name"], updated_account_data["name"])
+        self.assertEqual(updated_account["email"], updated_account_data["email"])
+        self.assertEqual(updated_account["address"], updated_account_data["address"])
+        self.assertEqual(updated_account["phone_number"], updated_account_data["phone_number"])
+
+    def test_delete_account(self):
+        """It should delete an existing account"""
+        # Create a dummy account
+        account = AccountFactory()
+        response_create = self.client.post(BASE_URL, json=account.serialize())
+        self.assertEqual(response_create.status_code, status.HTTP_201_CREATED)
+        new_account = response_create.get_json()
+
+        # Delete the created account
+        response_delete = self.client.delete(f"{BASE_URL}/{new_account['id']}")
+        self.assertEqual(response_delete.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Make sure account is deleted
+        response_read = self.client.get(f"{BASE_URL}/{new_account['id']}")
+        self.assertEqual(response_read.status_code, status.HTTP_404_NOT_FOUND)
+
+    # New test cases added to increase code coverage
+    def test_create_accounts_invalid_data(self):
+        """It should not Create an Account when sending invalid data"""
+        response = self.client.post(BASE_URL, data="invalid data")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_update_account_empty_data(self):
+        """It should not Update an Account when sending empty data"""
+        # Create a dummy account
+        account = AccountFactory()
+        response_create = self.client.post(BASE_URL, json=account.serialize())
+        self.assertEqual(response_create.status_code, status.HTTP_201_CREATED)
+        new_account = response_create.get_json()
+
+        # Update the created account with empty data
+        response_update = self.client.put(
+            f"{BASE_URL}/{new_account['id']}",
+            json={},
+            content_type="application/json"
+        )
+        self.assertEqual(response_update.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+######################################################################
+#   M A I N
+######################################################################
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

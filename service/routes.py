@@ -1,14 +1,8 @@
-"""
-Account Service
-
-This microservice handles the lifecycle of Accounts
-"""
 # pylint: disable=unused-import
 from flask import jsonify, request, make_response, abort, url_for   # noqa; F401
-from service.models import Account
+from service.models import Account, db  # Import db object  # noqa; F401
 from service.common import status  # HTTP Status Codes
 from . import app  # Import Flask application
-
 
 ############################################################
 # Health Endpoint
@@ -17,7 +11,6 @@ from . import app  # Import Flask application
 def health():
     """Health Status"""
     return jsonify(dict(status="OK")), status.HTTP_200_OK
-
 
 ######################################################################
 # GET INDEX
@@ -33,7 +26,6 @@ def index():
         ),
         status.HTTP_200_OK,
     )
-
 
 ######################################################################
 # CREATE A NEW ACCOUNT
@@ -60,35 +52,74 @@ def create_accounts():
 ######################################################################
 # LIST ALL ACCOUNTS
 ######################################################################
-
-# ... place you code here to LIST accounts ...
-
+@app.route("/accounts", methods=["GET"])
+def list_accounts():
+    """Returns all Accounts"""
+    app.logger.info("Request to list all Accounts")
+    accounts = Account.all()
+    results = [account.serialize() for account in accounts]
+    return make_response(jsonify(results), status.HTTP_200_OK)
 
 ######################################################################
 # READ AN ACCOUNT
 ######################################################################
-
-# ... place you code here to READ an account ...
-
+@app.route("/accounts/<int:account_id>", methods=["GET"])
+def get_accounts(account_id):
+    """
+    Reads an Account
+    This endpoint will read an Account based on the account_id that is requested
+    """
+    app.logger.info("Request to read an Account with id: %s", account_id)
+    account = Account.find(account_id)
+    if not account:
+        abort(status.HTTP_404_NOT_FOUND, f"Account with id [{account_id}] could not be found.")
+    return account.serialize(), status.HTTP_200_OK
 
 ######################################################################
 # UPDATE AN EXISTING ACCOUNT
 ######################################################################
+@app.route("/accounts/<int:account_id>", methods=["PUT"])
+def update_account(account_id):
+    """
+    Update an Account
+    This endpoint will update an Account based on the account_id that is requested
+    """
+    app.logger.info("Request to update an Account with id: %s", account_id)
+    account = Account.query.filter(Account.id == account_id).one_or_none()
+    if account is None:
+        abort(status.HTTP_404_NOT_FOUND, f"Account with id [{account_id}] could not be found.")
 
-# ... place you code here to UPDATE an account ...
+    data = request.get_json()
+    if not data:
+        abort(status.HTTP_400_BAD_REQUEST, "No data provided to update account.")
 
+    if "name" in data:
+        account.name = data["name"]
+    if "email" in data:
+        account.email = data["email"]
+    if "address" in data:
+        account.address = data["address"]
+    if "phone_number" in data:
+        account.phone_number = data["phone_number"]
+
+    db.session.commit()
+    return account.serialize(), status.HTTP_200_OK
 
 ######################################################################
 # DELETE AN ACCOUNT
 ######################################################################
-
-# ... place you code here to DELETE an account ...
-
+@app.route("/accounts/<int:account_id>", methods=["DELETE"])
+def delete_account(account_id):
+    """Deletes an Account"""
+    app.logger.info("Request to Delete an Account")
+    account = Account.find(account_id)
+    if account:
+        account.delete()
+    return make_response("", status.HTTP_204_NO_CONTENT)
 
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
 ######################################################################
-
 
 def check_content_type(media_type):
     """Checks that the media type is correct"""
