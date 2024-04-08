@@ -2,6 +2,14 @@
 
 ![Build Status](https://github.com/jesushova/devops-capstone-project/actions/workflows/ci-build.yaml/badge.svg)
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+>>>>>>> ec799ce (Added badge for GitHub Actions)
+=======
+
+>>>>>>> ec799ce63f6af200e7d2fecf99d61a72046fd7d4
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.9](https://img.shields.io/badge/Python-3.9-green.svg)](https://shields.io/)
 

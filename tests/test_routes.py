@@ -1,10 +1,9 @@
-"""
-Account API Service Test Suite
+# Account API Service Test Suite
 
-Test cases can be run with the following:
-  nosetests -v --with-spec --spec-color
-  coverage report -m
-"""
+# Test cases can be run with the following:
+#   nosetests -v --with-spec --spec-color
+#   coverage report -m
+
 import os
 import logging
 from unittest import TestCase
@@ -12,6 +11,8 @@ from tests.factories import AccountFactory
 from service.common import status  # HTTP Status Codes
 from service.models import db, Account, init_db
 from service.routes import app
+from service import talisman  # Import Talisman
+from flask_cors import CORS  # Import Flask-Cors
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -19,10 +20,10 @@ DATABASE_URI = os.getenv(
 
 BASE_URL = "/accounts"
 
+# Define HTTPS environment overrides for testing
+HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 
-######################################################################
-#  T E S T   C A S E S
-######################################################################
+# Test cases
 class TestAccountService(TestCase):
     """Account Service Tests"""
 
@@ -34,6 +35,12 @@ class TestAccountService(TestCase):
         app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
         app.logger.setLevel(logging.CRITICAL)
         init_db(app)
+
+        # Disable forced HTTPS
+        talisman.force_https = False
+
+        # Enable CORS
+        CORS(app)
 
     @classmethod
     def tearDownClass(cls):
@@ -229,10 +236,27 @@ class TestAccountService(TestCase):
         )
         self.assertEqual(response_update.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_security_headers(self):
+        """It should return security headers"""
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        headers = {
+            'X-Frame-Options': 'SAMEORIGIN',
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': 'default-src \'self\'; object-src \'none\'',
+            'Referrer-Policy': 'strict-origin-when-cross-origin'
+        }
+        for key, value in headers.items():
+            self.assertEqual(response.headers.get(key), value)
 
-######################################################################
-#   M A I N
-######################################################################
+    def test_cors_security(self):
+        """It should return a CORS header"""
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Check for the CORS header
+        self.assertEqual(response.headers.get('Access-Control-Allow-Origin'), '*')
+
+# Main
 if __name__ == "__main__":
     import unittest
     unittest.main()
