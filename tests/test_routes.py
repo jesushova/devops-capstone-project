@@ -1,10 +1,9 @@
-"""
-Account API Service Test Suite
+# Account API Service Test Suite
 
-Test cases can be run with the following:
-  nosetests -v --with-spec --spec-color
-  coverage report -m
-"""
+# Test cases can be run with the following:
+#   nosetests -v --with-spec --spec-color
+#   coverage report -m
+
 import os
 import logging
 from unittest import TestCase
@@ -13,6 +12,7 @@ from service.common import status  # HTTP Status Codes
 from service.models import db, Account, init_db
 from service.routes import app
 from service import talisman  # Import Talisman
+from flask_cors import CORS  # Import Flask-Cors
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -22,7 +22,6 @@ BASE_URL = "/accounts"
 
 # Define HTTPS environment overrides for testing
 HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
-
 
 # Test cases
 class TestAccountService(TestCase):
@@ -39,6 +38,9 @@ class TestAccountService(TestCase):
 
         # Disable forced HTTPS
         talisman.force_https = False
+
+        # Enable CORS
+        CORS(app)
 
     @classmethod
     def tearDownClass(cls):
@@ -247,10 +249,14 @@ class TestAccountService(TestCase):
         for key, value in headers.items():
             self.assertEqual(response.headers.get(key), value)
 
+    def test_cors_security(self):
+        """It should return a CORS header"""
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Check for the CORS header
+        self.assertEqual(response.headers.get('Access-Control-Allow-Origin'), '*')
 
-######################################################################
-#   M A I N
-######################################################################
+# Main
 if __name__ == "__main__":
     import unittest
     unittest.main()
