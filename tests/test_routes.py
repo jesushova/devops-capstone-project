@@ -1,9 +1,3 @@
-# Account API Service Test Suite
-
-# Test cases can be run with the following:
-#   nosetests -v --with-spec --spec-color
-#   coverage report -m
-
 import os
 import logging
 from unittest import TestCase
@@ -14,14 +8,14 @@ from service.routes import app
 from service import talisman  # Import Talisman
 from flask_cors import CORS  # Import Flask-Cors
 
+# Define HTTPS_ENV variable for Flask test environment override
+HTTPS_ENV = {'wsgi.url_scheme': 'https'}
+
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
 )
 
 BASE_URL = "/accounts"
-
-# Define HTTPS environment overrides for testing
-HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 
 # Test cases
 class TestAccountService(TestCase):
