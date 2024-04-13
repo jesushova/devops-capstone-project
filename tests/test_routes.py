@@ -1,9 +1,3 @@
-# Account API Service Test Suite
-
-# Test cases can be run with the following:
-#   nosetests -v --with-spec --spec-color
-#   coverage report -m
-
 import os
 import logging
 from unittest import TestCase
@@ -14,14 +8,14 @@ from service.routes import app
 from service import talisman  # Import Talisman
 from flask_cors import CORS  # Import Flask-Cors
 
+# Define HTTPS_ENV variable for Flask test environment override
+HTTPS_ENV = {'wsgi.url_scheme': 'https'}
+
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
 )
 
 BASE_URL = "/accounts"
-
-# Define HTTPS environment overrides for testing
-HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 
 # Test cases
 class TestAccountService(TestCase):
@@ -238,7 +232,7 @@ class TestAccountService(TestCase):
 
     def test_security_headers(self):
         """It should return security headers"""
-        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        response = self.client.get('/', environ_overrides=HTTPS_ENV)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         headers = {
             'X-Frame-Options': 'SAMEORIGIN',
@@ -251,12 +245,7 @@ class TestAccountService(TestCase):
 
     def test_cors_security(self):
         """It should return a CORS header"""
-        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        response = self.client.get('/', environ_overrides=HTTPS_ENV)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Check for the CORS header
         self.assertEqual(response.headers.get('Access-Control-Allow-Origin'), '*')
-
-# Main
-if __name__ == "__main__":
-    import unittest
-    unittest.main()

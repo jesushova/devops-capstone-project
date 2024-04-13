@@ -1,8 +1,8 @@
-# pylint: disable=unused-import
-from flask import jsonify, request, make_response, abort, url_for   # noqa; F401
-from service.models import Account, db  # Import db object  # noqa; F401
-from service.common import status  # HTTP Status Codes
-from . import app  # Import Flask application
+from flask import jsonify, request, make_response, abort, url_for
+from service.models import Account, db
+from service.common import status
+from . import app
+import os
 
 ############################################################
 # Health Endpoint
@@ -129,5 +129,9 @@ def check_content_type(media_type):
     app.logger.error("Invalid Content-Type: %s", content_type)
     abort(
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-        f"Content-Type must be {media_type}",
+        "Content-Type must be {}".format(media_type),
     )
+
+# Run the application
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
