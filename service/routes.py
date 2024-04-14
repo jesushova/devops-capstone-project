@@ -1,20 +1,25 @@
-# pylint: disable=unused-import
-from flask import jsonify, request, make_response, abort, url_for   # noqa; F401
-from service.models import Account, db  # Import db object  # noqa; F401
-from service.common import status  # HTTP Status Codes
-from . import app  # Import Flask application
+from flask import jsonify, request, make_response, abort, url_for
+from service.models import Account, db
+from service.common import status
+from . import app
+import os
 
 ############################################################
 # Health Endpoint
 ############################################################
+
+
 @app.route("/health")
 def health():
     """Health Status"""
     return jsonify(dict(status="OK")), status.HTTP_200_OK
 
+
 ######################################################################
 # GET INDEX
 ######################################################################
+
+
 @app.route("/")
 def index():
     """Root URL response"""
@@ -27,9 +32,12 @@ def index():
         status.HTTP_200_OK,
     )
 
+
 ######################################################################
 # CREATE A NEW ACCOUNT
 ######################################################################
+
+
 @app.route("/accounts", methods=["POST"])
 def create_accounts():
     """
@@ -49,9 +57,12 @@ def create_accounts():
         jsonify(message), status.HTTP_201_CREATED, {"Location": location_url}
     )
 
+
 ######################################################################
 # LIST ALL ACCOUNTS
 ######################################################################
+
+
 @app.route("/accounts", methods=["GET"])
 def list_accounts():
     """Returns all Accounts"""
@@ -60,9 +71,12 @@ def list_accounts():
     results = [account.serialize() for account in accounts]
     return make_response(jsonify(results), status.HTTP_200_OK)
 
+
 ######################################################################
 # READ AN ACCOUNT
 ######################################################################
+
+
 @app.route("/accounts/<int:account_id>", methods=["GET"])
 def get_accounts(account_id):
     """
@@ -73,11 +87,14 @@ def get_accounts(account_id):
     account = Account.find(account_id)
     if not account:
         abort(status.HTTP_404_NOT_FOUND, f"Account with id [{account_id}] could not be found.")
-    return account.serialize(), status.HTTP_200_OK
+    return jsonify(account.serialize()), status.HTTP_200_OK
+
 
 ######################################################################
 # UPDATE AN EXISTING ACCOUNT
 ######################################################################
+
+
 @app.route("/accounts/<int:account_id>", methods=["PUT"])
 def update_account(account_id):
     """
@@ -103,11 +120,14 @@ def update_account(account_id):
         account.phone_number = data["phone_number"]
 
     db.session.commit()
-    return account.serialize(), status.HTTP_200_OK
+    return jsonify(account.serialize()), status.HTTP_200_OK
+
 
 ######################################################################
 # DELETE AN ACCOUNT
 ######################################################################
+
+
 @app.route("/accounts/<int:account_id>", methods=["DELETE"])
 def delete_account(account_id):
     """Deletes an Account"""
@@ -116,6 +136,7 @@ def delete_account(account_id):
     if account:
         account.delete()
     return make_response("", status.HTTP_204_NO_CONTENT)
+
 
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
@@ -129,5 +150,9 @@ def check_content_type(media_type):
     app.logger.error("Invalid Content-Type: %s", content_type)
     abort(
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-        f"Content-Type must be {media_type}",
+        "Content-Type must be {}".format(media_type),
     )
+
+# Run the application
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
