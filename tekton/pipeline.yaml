@@ -15,7 +15,7 @@ spec:
   tasks:
     - name: clone
       workspaces:
-        - name: output  # Assuming 'git-clone' expects an 'output' workspace based on error logs
+        - name: output  # Adjusted to 'output' based on the earlier task definition
           workspace: pipeline-workspace
       taskRef:
         name: git-clone
@@ -28,7 +28,7 @@ spec:
           value: "true"
     - name: lint
       workspaces:
-        - name: source  # Assuming 'flake8' expects a 'source' workspace; adjust if needed
+        - name: source  # This task uses the 'source' workspace
           workspace: pipeline-workspace
       taskRef:
         name: flake8
@@ -43,3 +43,16 @@ spec:
             - "--max-complexity=10"
             - "--max-line-length=127"
             - "--statistics"
+    - name: tests
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: nose
+      runAfter:
+        - clone
+      params:
+        - name: database_uri
+          value: "sqlite:///test.db"
+        - name: args
+          value: "-v --with-spec --spec-color"
