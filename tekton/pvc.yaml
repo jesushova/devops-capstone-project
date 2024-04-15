@@ -3,10 +3,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: pipelinerun-pvc
 spec:
-  storageClassName: skills-network-learner
+  accessModes:
+  - ReadWriteOnce
   resources:
     requests:
-      storage:  1Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteMany
+      storage: 1Gi
+  storageClassName: ibmc-vpc-block-general-purpose

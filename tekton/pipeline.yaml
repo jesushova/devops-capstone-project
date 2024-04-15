@@ -9,13 +9,19 @@ spec:
     - name: repo-url
       type: string
       description: "URL of the repository to clone."
+      default: "https://github.com/jesushova/devops-capstone-project.git"
     - name: branch
       type: string
       description: "Branch to checkout and use."
+      default: "main"
+    - name: build-image
+      type: string
+      description: "The name of the Docker image to build"
+      default: "image-registry.openshift-image-registry.svc:5000/sn-labs-jesushova/accounts:latest"
   tasks:
     - name: clone
       workspaces:
-        - name: output  # Adjusted to 'output' based on the earlier task definition
+        - name: output
           workspace: pipeline-workspace
       taskRef:
         name: git-clone
@@ -28,7 +34,7 @@ spec:
           value: "true"
     - name: lint
       workspaces:
-        - name: source  # This task uses the 'source' workspace
+        - name: source
           workspace: pipeline-workspace
       taskRef:
         name: flake8
@@ -38,11 +44,7 @@ spec:
         - name: image
           value: "python:3.9-slim"
         - name: args
-          value:
-            - "--count"
-            - "--max-complexity=10"
-            - "--max-line-length=127"
-            - "--statistics"
+          value: ["--count", "--max-complexity=10", "--max-line-length=127", "--statistics"]
     - name: tests
       workspaces:
         - name: source
@@ -56,3 +58,34 @@ spec:
           value: "sqlite:///test.db"
         - name: args
           value: "-v --with-spec --spec-color"
+    - name: build
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      runAfter:
+        - lint
+        - tests
+      params:
+        - name: IMAGE
+          value: "$(params.build-image)"
+    - name: deploy
+      workspaces:
+        - name: manifest-dir
+          workspace: pipeline-workspace
+      taskRef:
+        name: openshift-client
+        kind: ClusterTask
+      runAfter:
+        - build
+      params:
+        - name: SCRIPT
+          value: |
+            echo "Updating manifest..."
+            sed -i "s|IMAGE_NAME_HERE|$(params.build-image)|g" deploy/deployment.yaml
+            cat deploy/deployment.yaml
+            echo "Deploying to OpenShift..."
+            oc apply -f deploy/
+            oc get pods -l app=accounts
